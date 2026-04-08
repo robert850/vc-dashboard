@@ -6,6 +6,7 @@ import requests
 import io
 import re
 from datetime import datetime, timedelta
+from typing import Optional
 
 # --- Config ---
 st.set_page_config(page_title="VC Outreach Dashboard", layout="wide")
@@ -68,7 +69,7 @@ def normalize(df: pd.DataFrame, col_map: dict, deal_name: str) -> pd.DataFrame:
     return df
 
 
-def extract_latest_date(notes: str) -> datetime | None:
+def extract_latest_date(notes: str) -> Optional[datetime]:
     if not isinstance(notes, str):
         return None
     dates = re.findall(r"(\d{1,2}/\d{1,2}/\d{4})", notes)
