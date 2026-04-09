@@ -57,6 +57,18 @@ def load_sheet(sheet_id: str) -> pd.DataFrame:
 
 
 def normalize(df: pd.DataFrame, col_map: dict, deal_name: str) -> pd.DataFrame:
+    # Deduplicate column names by appending suffix to duplicates
+    seen = {}
+    new_cols = []
+    for c in df.columns:
+        if c in seen:
+            seen[c] += 1
+            new_cols.append(f"{c}_{seen[c]}")
+        else:
+            seen[c] = 0
+            new_cols.append(c)
+    df.columns = new_cols
+
     rename = {}
     for orig, standard in col_map.items():
         matches = [c for c in df.columns if c.strip().lower() == orig.lower()]
