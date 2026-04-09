@@ -156,6 +156,78 @@ if len(no_date) > 0:
 
 st.divider()
 
+# --- Sankey Diagram ---
+st.subheader("Lead Conversion Flow")
+
+
+def compute_sankey(df: pd.DataFrame) -> go.Figure:
+    total = len(df)
+    li_outreach = df["Zoe Notes"].apply(lambda n: bool(re.search(r"linkedin outreach", str(n), re.I))).sum()
+    li_accepted = df["Zoe Notes"].apply(lambda n: bool(re.search(r"accepted connection", str(n), re.I))).sum()
+    li_responded = df["Zoe Notes"].apply(
+        lambda n: bool(re.search(r"linkedin outreach", str(n), re.I) and re.search(r"respond|replied|response", str(n), re.I))
+    ).sum()
+    email_sent = (df["Status"] == "Email Sent").sum()
+    in_drafts = (df["Status"] == "In Drafts").sum()
+    no_outreach = total - li_outreach
+
+    # Nodes: 0=All Contacts, 1=LinkedIn Outreach, 2=No Outreach Yet,
+    #        3=Connection Accepted, 4=Pending Accept, 5=Responded, 6=No Response Yet,
+    #        7=Email Sent, 8=In Drafts
+    labels = [
+        f"All Contacts ({total})",
+        f"LinkedIn Outreach ({li_outreach})",
+        f"No Outreach Yet ({no_outreach})",
+        f"Connection Accepted ({li_accepted})",
+        f"Pending Accept ({li_outreach - li_accepted})",
+        f"Responded ({li_responded})",
+        f"No Response Yet ({li_accepted - li_responded})",
+        f"Email Sent ({email_sent})",
+        f"In Drafts ({in_drafts})",
+    ]
+    colors = ["#6366F1", "#3B82F6", "#94A3B8", "#10B981", "#F59E0B",
+              "#10B981", "#F59E0B", "#10B981", "#3B82F6"]
+
+    source = [0, 0, 1, 1, 3, 3]
+    target = [1, 2, 3, 4, 5, 6]
+    value = [
+        li_outreach,
+        no_outreach,
+        li_accepted,
+        max(li_outreach - li_accepted, 0),
+        li_responded,
+        max(li_accepted - li_responded, 0),
+    ]
+
+    # Filter out zero-value links
+    filtered_links = [(s, t, v) for s, t, v in zip(source, target, value) if v > 0]
+    if filtered_links:
+        source, target, value = zip(*filtered_links)
+    else:
+        source, target, value = [], [], []
+
+    fig = go.Figure(go.Sankey(
+        node=dict(
+            pad=20,
+            thickness=20,
+            label=labels,
+            color=colors,
+        ),
+        link=dict(
+            source=list(source),
+            target=list(target),
+            value=list(value),
+            color="rgba(200,200,200,0.4)",
+        ),
+    ))
+    fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), height=400)
+    return fig
+
+
+st.plotly_chart(compute_sankey(filtered), use_container_width=True)
+
+st.divider()
+
 # --- Charts ---
 left, right = st.columns(2)
 
